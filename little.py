@@ -1,51 +1,59 @@
 import customtkinter as ctk
 from PIL import Image, ImageTk
 import ctypes
+from Functions import button_clicked
 
-# Windows Taskbar Logo
+# Windows taskbar logo
 try:
+    # This allows for our logo to show up instead of the python snake 
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('baze.calc.v1')
 except:
     pass
 
-# --- Constants ---
+# Stylization Constants
 COLOR_BG = "#1A1A1A"          
 COLOR_BTN_NUM = "#333333"    
 COLOR_BTN_OP = "#2D2D2D"      
 COLOR_ACCENT = "#D24A14"  
 COLOR_TEXT = "#FFFFFF"
 
+# Window set up 
 app = ctk.CTk()
 app.title("Baze University Calc")
-app.geometry("320x550")
+app.geometry("340x600")
 app.configure(fg_color=COLOR_BG)
 
-# --- Icon Setup ---
-# Used .ico for the windows title bar
+# Icon and logo setup
 try:
-    # Set the Window Icon (Title Bar)
+    # Window Title Bar Icon
     app.iconbitmap("images (2).ico") 
 except:
-    # Fallback if you only have the PNG
-    img = ImageTk.PhotoImage(Image.open("Y2k.png"))
-    app.wm_iconphoto(True, img)
-# Window logo
-icon_image = Image.open("Y2k.png")
+    try:
+        # This makes the image revert to .png if .ico isn't found for whatever reason 
+        img = ImageTk.PhotoImage(Image.open("Y2k.png"))
+        app.wm_iconphoto(True, img)
+    except:
+        print("Icon files not found. Skipping icon setup.")
 
-icon_photo = ImageTk.PhotoImage(icon_image)
+# UI config
+frame = ctk.CTkFrame(app, fg_color=COLOR_BG)
+frame.pack(expand=True, fill="both", padx=15, pady=15)
 
-app.wm_iconphoto(True, icon_photo)
+# 
+history_label = ctk.CTkLabel(
+    frame, text="", font=("Arial", 18), 
+    anchor="e", text_color="#888888" 
+)
+history_label.grid(row=0, column=0, columnspan=4, sticky="we", padx=10)
 
-try:
-    logo_img = ctk.CTkImage(light_image=Image.open("Y2k.png"),
-                            dark_image=Image.open("Y2k.png"),
-                            size=(20, 20))
-except Exception as e:
-    print(f"Logo not found, using placeholder. Error: {e}")
-    logo_img = None
+# 2. Main Display Label (The "Result" display)
+label = ctk.CTkLabel(
+    frame, text="0", font=("Arial", 55), 
+    anchor="e", text_color=COLOR_TEXT, height=100
+)
+label.grid(row=1, column=0, columnspan=4, sticky="we", padx=10, pady=(0, 20))
 
-
-# --- Basic button layout ---
+# --- Button Configuration ---
 button_values = [
     ["C", "÷", "×", "⌫"],
     ["7", "8", "9", "-"],
@@ -55,57 +63,39 @@ button_values = [
 ]
 operators = ["÷", "×", "-", "+", "⌫", "C", "+/-"]
 
-# --- UI Containers ---
-frame = ctk.CTkFrame(app, fg_color=COLOR_BG)
-frame.pack(expand=True, fill="both", padx=10, pady=10)
-
-
-# 2. Display Label
-label = ctk.CTkLabel(
-    frame, text="0", font=("Arial", 55), 
-    anchor="e", text_color=COLOR_TEXT, height=120
-)
-label.grid(row=0, column=0, columnspan=4, sticky="we", padx=10, pady=(20, 10))
-
-# Button Generation 
-# I Used enumerate to get row/column indices for grid positioning
+# --- Button Generation Loop ---
 for row_idx, row_list in enumerate(button_values):
     for col_idx, value in enumerate(row_list):
         if not value: continue 
         
-        # Determine Color Logic
+        # Color Logic based on button type
         if value == "=":
-            fg = COLOR_ACCENT
-            hover = "#A03810"
-            text_col = "#FFFFFF"
+            fg, hover = COLOR_ACCENT, "#A03810"
         elif value in operators:
-            fg = COLOR_BTN_OP
-            hover = "#3D3D3D"
-            text_col = COLOR_TEXT
+            fg, hover = COLOR_BTN_OP, "#3D3D3D"
         else:
-            fg = COLOR_BTN_NUM
-            hover = "#454545"
-            text_col = COLOR_TEXT
+            fg, hover = COLOR_BTN_NUM, "#454545"
 
         btn = ctk.CTkButton(
             frame,
             text=value,
-            width=70,
-            height=70,
-            corner_radius=12,
+            width=75, height=75,
+            corner_radius=15,
             fg_color=fg,
-            text_color=text_col,
             hover_color=hover,
-            font=("Arial", 20, "bold"),
-            command=lambda v=value: print(f"Clicked: {v}")
+            text_color=COLOR_TEXT,
+            font=("Arial", 22, "bold"),
+            # Passing all 3 required arguments to your function
+            command=lambda v=value: button_clicked(v, label, history_label)
         )
-        # Offset by row 1 because the display label is row 0
-        btn.grid(row=row_idx + 1, column=col_idx, padx=3, pady=3, sticky="nsew")
+        # Offset by 2 rows to account for History (row 0) and Main (row 1)
+        btn.grid(row=row_idx + 2, column=col_idx, padx=4, pady=4, sticky="nsew")
 
-# Configure grid weights
-for i in range(4):
+# --- Responsive Grid Weights ---
+for i in range(4): 
     frame.grid_columnconfigure(i, weight=1)
-for i in range(1, 6):
-    frame.grid_rowconfigure(i, weight=1) # Weight allows for the buttons to adjust based on the geometry 
+for i in range(2, 7): 
+    frame.grid_rowconfigure(i, weight=1)
 
-app.mainloop()
+if __name__ == "__main__":
+    app.mainloop()

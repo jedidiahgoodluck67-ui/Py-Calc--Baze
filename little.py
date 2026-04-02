@@ -1,65 +1,111 @@
-import tkinter as tk
 import customtkinter as ctk
+from PIL import Image, ImageTk
+import ctypes
 
-# Set themes
-ctk.set_appearance_mode("dark")
-ctk.set_default_color_theme("dark-blue")
+# Windows Taskbar Logo
+try:
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('baze.calc.v1')
+except:
+    pass
 
-root = ctk.CTk()
-root.title("Baze Group G Modern Calc")
-root.geometry("1980x800")
+# --- Constants ---
+COLOR_BG = "#1A1A1A"          
+COLOR_BTN_NUM = "#333333"    
+COLOR_BTN_OP = "#2D2D2D"      
+COLOR_ACCENT = "#D24A14"  
+COLOR_TEXT = "#FFFFFF"
 
-# Logic Functions
-def add_to_expression(value):
-    current_text = main_entry.get()
-    main_entry.delete(0, tk.END)
-    main_entry.insert(0, current_text + str(value))
+app = ctk.CTk()
+app.title("Baze University Calc")
+app.geometry("320x550")
+app.configure(fg_color=COLOR_BG)
 
-def calculate():
-    try:
-        result = eval(main_entry.get())
-        result_display_label.configure(text=f"Result: {result}", text_color="#2ecc71")
-    except Exception:
-        result_display_label.configure(text="Error: Invalid Input", text_color="#e74c3c")
+# --- Icon Setup ---
+# Used .ico for the windows title bar
+try:
+    # Set the Window Icon (Title Bar)
+    app.iconbitmap("images (2).ico") 
+except:
+    # Fallback if you only have the PNG
+    img = ImageTk.PhotoImage(Image.open("Y2k.png"))
+    app.wm_iconphoto(True, img)
+# Window logo
+icon_image = Image.open("Y2k.png")
 
-def clear_entry():
-    main_entry.delete(0, tk.END)
-    result_display_label.configure(text="Result: --", text_color="#2ecc71")
+icon_photo = ImageTk.PhotoImage(icon_image)
 
-# --- UI Layout ---
+app.wm_iconphoto(True, icon_photo)
 
-# 1. Main Display Entry (Infinite numbers go here)
-label1 = ctk.CTkLabel(root, text="Enter Expression:", font=("Helvetica", 14))
-label1.pack(pady=(20, 0))
+try:
+    logo_img = ctk.CTkImage(light_image=Image.open("Y2k.png"),
+                            dark_image=Image.open("Y2k.png"),
+                            size=(20, 20))
+except Exception as e:
+    print(f"Logo not found, using placeholder. Error: {e}")
+    logo_img = None
 
-main_entry = ctk.CTkEntry(root, placeholder_text="e.g. 5 + 10 * 2 / 3", width=320, height=50, corner_radius=10, font=("Helvetica", 18))
-main_entry.pack(pady=10)
 
-# 2. Operations Frame
-ops_frame = ctk.CTkFrame(root, fg_color="transparent")
-ops_frame.pack(pady=10)
+# --- Basic button layout ---
+button_values = [
+    ["C", "÷", "×", "⌫"],
+    ["7", "8", "9", "-"],
+    ["4", "5", "6", "+"],
+    ["1", "2", "3", "="],
+    ["0", ".", "+/-", ""]
+]
+operators = ["÷", "×", "-", "+", "⌫", "C", "+/-"]
 
-# Buttons for operators
-operators = [("+", "+"), ("-", "-"), ("*", "*"), ("/", "/")]
+# --- UI Containers ---
+frame = ctk.CTkFrame(app, fg_color=COLOR_BG)
+frame.pack(expand=True, fill="both", padx=10, pady=10)
 
-for text, char in operators:
-    ctk.CTkButton(ops_frame, text=text, width=60, height=60, corner_radius=30, 
-                  command=lambda c=char: add_to_expression(c)).pack(side="left", padx=5)
 
-# 3. Utility Buttons (Clear & Equals)
-btn_frame = ctk.CTkFrame(root, fg_color="transparent")
-btn_frame.pack(pady=10)
+# 2. Display Label
+label = ctk.CTkLabel(
+    frame, text="0", font=("Arial", 55), 
+    anchor="e", text_color=COLOR_TEXT, height=120
+)
+label.grid(row=0, column=0, columnspan=4, sticky="we", padx=10, pady=(20, 10))
 
-ctk.CTkButton(btn_frame, text="Clear", width=100, height=50, fg_color="#95a5a6", 
-              hover_color="#7f8c8d", command=clear_entry).pack(side="left", padx=5)
+# Button Generation 
+# I Used enumerate to get row/column indices for grid positioning
+for row_idx, row_list in enumerate(button_values):
+    for col_idx, value in enumerate(row_list):
+        if not value: continue 
+        
+        # Determine Color Logic
+        if value == "=":
+            fg = COLOR_ACCENT
+            hover = "#A03810"
+            text_col = "#FFFFFF"
+        elif value in operators:
+            fg = COLOR_BTN_OP
+            hover = "#3D3D3D"
+            text_col = COLOR_TEXT
+        else:
+            fg = COLOR_BTN_NUM
+            hover = "#454545"
+            text_col = COLOR_TEXT
 
-equals_btn = ctk.CTkButton(btn_frame, text="=", width=210, height=50, fg_color="#e67e22", 
-                           hover_color="#d35400", font=("Helvetica", 20, "bold"), 
-                           command=calculate)
-equals_btn.pack(side="left", padx=5)
+        btn = ctk.CTkButton(
+            frame,
+            text=value,
+            width=70,
+            height=70,
+            corner_radius=12,
+            fg_color=fg,
+            text_color=text_col,
+            hover_color=hover,
+            font=("Arial", 20, "bold"),
+            command=lambda v=value: print(f"Clicked: {v}")
+        )
+        # Offset by row 1 because the display label is row 0
+        btn.grid(row=row_idx + 1, column=col_idx, padx=3, pady=3, sticky="nsew")
 
-# 4. Results
-result_display_label = ctk.CTkLabel(root, text="Result: --", font=("Helvetica", 24, "bold"), text_color="#2ecc71")
-result_display_label.pack(pady=30)
+# Configure grid weights
+for i in range(4):
+    frame.grid_columnconfigure(i, weight=1)
+for i in range(1, 6):
+    frame.grid_rowconfigure(i, weight=1) # Weight allows for the buttons to adjust based on the geometry 
 
-root.mainloop()
+app.mainloop()
